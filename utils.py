@@ -1,64 +1,62 @@
 import os
-import settings
-import cv2
-import numpy as np
-from imutils.perspective import four_point_transform 
+from PIL import Image
+from pdf2image import convert_from_path
+import pytesseract
 
-def save_upload_image(fileObj):
-    filename = fileObj.filename
-    # name, ext = filename.split('.')
-    # save_filename = 'upload.'+ext
-    
-    upload_image_path = settings.join_path(settings.SAVE_DIR, filename)
-    
-    fileObj.save(upload_image_path)
-    
-    return upload_image_path
+TEMP_DIR = 'temp'
 
-class DocumentScan():
-    def __init__(self):
-        pass
+def create_temp_dir():
+    if not os.path.exists(TEMP_DIR):
+        os.makedirs(TEMP_DIR)
 
-    
-    def document_scanner(self, image_path):
-        self.image = cv2.imread(image_path)
-        img_re, self.size = self.resizer(self.image)
+def save_temp_file(filename, file_content):
+    create_temp_dir()
+    temp_file_path = os.path.join(TEMP_DIR, filename)
+    with open(temp_file_path, 'wb') as f:
+        f.write(file_content.read())
+    return temp_file_path
 
-        try:
-            detail = cv2.detailEnhance(img_re, sigma_s=20, sigma_r=0.15)
-            gray = cv2.cvtColor(detail, cv2.COLOR_BAYER_BG2GRAY)
-            blur = cv2.GaussianBlur(gray, (5,5),0)
-            #edges
-            edge_image = cv2.Canny(blur, 75, 200)
-            #morphological transform
-            kernel = np.ones((5,5), np.uint8)
-            dilate = cv2.dilate(edge_image, kernel, iterations=1)
-            closing = cv2.morphologyEx(dilate, cv2.MORPH_CLOSE, kernel)
-            #find contours
-            contours, hire = cv2.findContours(closing, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-            contours = sorted(contours, key=cv2.contourArea, reverse=True)
-            for contour in contours:
-                peri = cv2.arcLength(contour, True)
-                approx = cv2.approxPolyDP(contour, 0.02*peri, True)
-                
-                if len(approx)==4:
-                    four_points = np.squeeze(approx)
-                    break
-            
-            return four_points, self.size
-        
-        except:
-            return None, self.size
-        
+def allowed_file(filename):
+    allowed_extensions = {'pdf', 'png', 'jpg', 'jpeg'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+
+def read_file_content(file):
+    return file
+
+def read_image_from_content(content):
+    try:
+        return Image.open(content)
+    except Exception as e:
+        print(f"Error reading image: {e}")
+        return None
+
+def extract_text_from_image(image):
+    try:
+        return pytesseract.image_to_string(image)
+    except Exception as e:
+        print(f"Error extracting text: {e}")
+        return ""
+
+def convert_pdf_to_images(pdf_file_path):
+    try:
+        return convert_from_path(pdf_file_path)
+    except Exception as e:
+        print(f"Error converting PDF to images: {e}")
+    return []
+
+def save_text(filename, text, media_dir):
+    # Ensure media_dir exists
+    if not os.path.exists(media_dir):
+        os.makedirs(media_dir)
     
-    def calibrate_to_original_size(self, four_points):
-          #fours points for original image
-        multiple = self.image.shape[1]/self.size[0]
-        four_points_orig = four_points*multiple
-        four_points_orig = four_points_orig.astype(int)
-        
-        wrap_image = four_point_transform(self.image, four_points_orig)
-        #apply magic colour
-        magic_color = self.apply_brightness_contrast(wrap_image, brightness=40, contrast=40)
-        
-        return magic_color
+    text_filename = f"{os.path.splitext(filename)[0]}.txt"
+    text_file_path = os.path.join(media_dir, text_filename)
+    
+    # Check if the path already exists as a file
+    if os.path.isfile(text_file_path):
+        raise Exception(f"Path conflict: {text_file_path} exists as a file.")
+    
+    with open(text_file_path, 'w') as f:
+        f.write(text)
+    
+    return text_filename

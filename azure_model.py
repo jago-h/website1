@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 import os
+import utils
 
 load_dotenv(".env")
 print(os.getenv("endpoint"))
@@ -51,7 +52,10 @@ def analyse(result):
 
         if page.lines:
             for line_idx, line in enumerate(page.lines):
-                print(line.content)
+                if line.content == None:
+                    continue
+                else:
+                    print(line.content)
                 
     if result.tables:
         for table_idx, table in enumerate(result.tables):
@@ -61,7 +65,14 @@ def analyse(result):
 
     print("----------------------------------------")
 
+path = "temp/Screenshot 2024-08-06 at 23.23.12.png"
+result_text = (get_result_from_file(path))
+extracted_text = (analyse(result_text))
+print(result_text)
+   
    
 #The file size must not exceed 5 MB !!!
-path = "temp/FSA_FRAME TEAMS MEETING-01 2.jpg"
-print(analyse(get_result_from_file(path)))
+def ext_text(temp_file_path):
+    path = temp_file_path
+    extracted_text = (analyse(get_result_from_file(path)))
+    return extracted_text

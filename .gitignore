@@ -1,3 +1,7 @@
 .env
 .venv
 static/media/*
+__pycache__
+static/.DS_Store
+.DS_Store
+temp/
