@@ -1,0 +1,71 @@
+from flask import Flask, request, render_template, redirect, url_for, send_from_directory
+import os
+import utils
+import settings
+
+app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = settings.UPLOAD_FOLDER
+app.config['MEDIA_DIR'] = os.path.join('static', 'media')  # Updated to use static/media
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['MEDIA_DIR'], filename)
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'files' not in request.files:
+        return "No files part", 400
+
+    files = request.files.getlist('files')
+    if not files:
+        return "No selected files", 400
+
+    text_files = []
+    for file in files:
+        if file.filename == '':
+            return "One or more files have no selected file", 400
+
+        if not utils.allowed_file(file.filename):
+            return f"Invalid file format for {file.filename}", 400
+
+        file_content = utils.read_file_content(file)
+        if file_content is None:
+            return f"Error reading file {file.filename}", 500
+
+        temp_file_path = utils.save_temp_file(file.filename, file_content)
+
+        if file.filename.endswith('.pdf'):
+            images = utils.convert_pdf_to_images(temp_file_path)
+            if not images:
+                return f"Failed to convert PDF {file.filename} to images", 500
+            texts = [utils.extract_text_from_image(img) for img in images]
+            extracted_text = "\n".join(texts)
+        else:
+            image = utils.read_image_from_content(file_content)
+            if image is None:
+                return f"Failed to read image {file.filename}", 500
+            extracted_text = utils.extract_text_from_image(image)
+
+        text_file_name = utils.save_text(file.filename, extracted_text, app.config['MEDIA_DIR'])  # Save to static/media
+        text_files.append(text_file_name)
+
+    return render_template('results.html', text_files=text_files)
+
+@app.route('/download/<filename>')
+def download_file(filename):
+    file_path = os.path.join(app.config['MEDIA_DIR'], filename)
+    if os.path.exists(file_path):
+        return send_from_directory(app.config['MEDIA_DIR'], filename)
+    else:
+        return f"File {filename} not found.", 404
+
+if __name__ == '__main__':
+    if not os.path.exists(app.config['UPLOAD_FOLDER']):
+        os.makedirs(app.config['UPLOAD_FOLDER'])
+    if not os.path.exists(app.config['MEDIA_DIR']):
+        os.makedirs(app.config['MEDIA_DIR'])
+    app.run(debug=True)

@@ -1,0 +1,105 @@
+/* static/css/styles.css */
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f7f9fc;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
+
+header {
+    background: linear-gradient(135deg, #ff7e5f, #feb47b);
+    color: #ffffff;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+header h1 {
+    margin: 0;
+    font-size: 3em;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+form {
+    background: #ffffff;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+form input[type="file"] {
+    display: block;
+    width: 100%;
+    margin: 20px 0;
+    padding: 10px;
+    border: 2px solid #dedede;
+    border-radius: 10px;
+    font-size: 16px;
+    background-color: #f9f9f9;
+}
+
+button {
+    display: inline-block;
+    font-size: 18px;
+    padding: 12px 30px;
+    color: #ffffff;
+    background: #28a745;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.3s ease;
+}
+
+button:hover {
+    background: #218838;
+    transform: scale(1.05);
+}
+
+.results {
+    margin-top: 40px;
+}
+
+.results a {
+    display: block;
+    padding: 15px;
+    background: #ffffff;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    color: #007bff;
+    text-decoration: none;
+    transition: background 0.3s ease, color 0.3s ease;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.results a:hover {
+    background: #e9ecef;
+    color: #0056b3;
+}
+
+footer {
+    background: linear-gradient(135deg, #ff7e5f, #feb47b);
+    color: #ffffff;
+    padding: 20px 0;
+    text-align: center;
+    box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.2);
+    position: absolute;
+    width: 100%;
+    bottom: 0;
+}
+
+footer p {
+    margin: 0;
+    font-size: 14px;
+    opacity: 0.8;
+}
