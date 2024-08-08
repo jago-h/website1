@@ -1,2 +1,3 @@
 UPLOAD_FOLDER = 'uploads'
-MEDIA_DIR = 'temp'
+MEDIA_DIR = 'static/media'
+TEMP_FOLDER = 'temp'

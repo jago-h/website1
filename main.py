@@ -1,12 +1,27 @@
 from flask import Flask, request, render_template, redirect, url_for, send_from_directory
 import os
+import shutil
 import utils
 import settings
 import azure_model
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = settings.UPLOAD_FOLDER
-app.config['MEDIA_DIR'] = os.path.join('static', 'media')  # Updated to use static/media
+app.config['TEMP_FOLDER'] = settings.TEMP_FOLDER
+app.config['MEDIA_DIR'] = settings.MEDIA_DIR
+
+def clean_folders():
+    """Remove all files in the TEMP_FOLDER and MEDIA_DIR."""
+    for directory in [app.config['TEMP_FOLDER'], app.config['MEDIA_DIR']]:
+        for filename in os.listdir(directory):
+            file_path = os.path.join(directory, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            except Exception as e:
+                print(f'Failed to delete {file_path}. Reason: {e}')
 
 @app.route('/')
 def index():
@@ -18,6 +33,9 @@ def uploaded_file(filename):
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    # Clean the upload and media folders before processing new files
+    clean_folders()
+    
     if 'files' not in request.files:
         return "No files part", 400
 
@@ -55,13 +73,16 @@ def upload_file():
                 if image is None:
                     return f"Failed to read image {file.filename}", 500
                 extracted_text = utils.extract_text_from_image(image)
+            
+            text_file_name = utils.save_text(file.filename, extracted_text, app.config['MEDIA_DIR'])  # Save to static/media
+            text_files.append(text_file_name)
 
         elif ocr_model == 'azure':
             extracted_text = azure_model.ext_text(temp_file_path)
-                    
-        text_file_name = utils.save_text(file.filename, extracted_text, app.config['MEDIA_DIR'])  # Save to static/media
-        text_files.append(text_file_name)
-
+            text_file_name = azure_model.read_and_write_file(file.filename, extracted_text, app.config['MEDIA_DIR'])  # Save to static/media
+            text_files.append(text_file_name)
+       
+    
     return render_template('results.html', text_files=text_files)
 
 @app.route('/download/<filename>')
@@ -71,6 +92,16 @@ def download_file(filename):
         return send_from_directory(app.config['MEDIA_DIR'], filename)
     else:
         return f"File {filename} not found.", 404
+
+@app.route('/save_file', methods=['POST'])
+def save_file():
+    filename = request.form.get('filename')
+    file_path = os.path.join(app.config['MEDIA_DIR'], filename)
+    try:
+        return send_file(file_path, as_attachment=True)
+    except Exception as e:
+        print(f"An error occurred while sending the file: {e}")
+        return redirect(url_for('scanner'))
 
 if __name__ == '__main__':
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
