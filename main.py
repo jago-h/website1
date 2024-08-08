@@ -46,6 +46,7 @@ def upload_file():
         return "No selected files", 400
 
     text_files = []
+    file_contents = {}
     for file in files:
         if file.filename == '':
             return "One or more files have no selected file", 400
@@ -58,8 +59,9 @@ def upload_file():
         if file_content is None:
             return f"Error reading file {file.filename}", 500
 
-        temp_file_path = utils.save_temp_file(file.filename, file_content)
 
+        # Save the file content for preview
+        temp_file_path = utils.save_temp_file(file.filename, file_content)
 
         if ocr_model == 'pytesseract':
             if file.filename.endswith('.pdf'):
@@ -76,14 +78,16 @@ def upload_file():
             
             text_file_name = utils.save_text(file.filename, extracted_text, app.config['MEDIA_DIR'])  # Save to static/media
             text_files.append(text_file_name)
+            file_contents[text_file_name] = extracted_text
 
         elif ocr_model == 'azure':
             extracted_text = azure_model.ext_text(temp_file_path)
             text_file_name = azure_model.read_and_write_file(file.filename, extracted_text, app.config['MEDIA_DIR'])  # Save to static/media
             text_files.append(text_file_name)
+            file_contents[text_file_name] = extracted_text
        
     
-    return render_template('results.html', text_files=text_files)
+    return render_template('results.html', text_files=text_files, file_contents=file_contents)
 
 @app.route('/download/<filename>')
 def download_file(filename):
