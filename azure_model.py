@@ -42,33 +42,33 @@ def get_result_from_file(path):
     # print(result)
 
 def analyse(result):
-    if result.styles and any([style.is_handwritten for style in result.styles]):
-        print("Document contains handwritten content")
-    else:
-        print("Document does not contain handwritten content")
+    extracted_lines = []
 
+    if result.styles and any([style.is_handwritten for style in result.styles]):
+        extracted_lines.append("Document contains handwritten content")
+    
     for page in result.pages:
-        print(f"----Analyzing layout from page #{page.page_number}----")
+        extracted_lines.append(f"----Analyzing layout from page #{page.page_number}----")
 
         if page.lines:
             for line_idx, line in enumerate(page.lines):
-                if line.content == None:
-                    continue
-                else:
-                    print(line.content)
+                if line.content:
+                    extracted_lines.append(line.content)
                 
     if result.tables:
         for table_idx, table in enumerate(result.tables):
-            print(f"Table # {table_idx} has {table.row_count} rows and " f"{table.column_count} columns")
+            extracted_lines.append(f"Table # {table_idx} has {table.row_count} rows and {table.column_count} columns")
             for cell in table.cells:
-                print(f"...Cell[{cell.row_index}][{cell.column_index}] has text '{cell.content}'")
+                extracted_lines.append(f"...Cell[{cell.row_index}][{cell.column_index}] has text '{cell.content}'")
 
-    print("----------------------------------------")
+    extracted_lines.append("----------------------------------------")
+    return extracted_lines
 
-path = "temp/Screenshot 2024-08-06 at 23.23.12.png"
-result_text = (get_result_from_file(path))
-extracted_text = (analyse(result_text))
-print(result_text)
+
+#path = "temp/FSA_FRAME TEAMS MEETING-01 2.jpg"
+#result_text = (get_result_from_file(path))
+#extracted_text = (analyse(result_text))
+#print(extracted_text)
    
    
 #The file size must not exceed 5 MB !!!
@@ -76,3 +76,26 @@ def ext_text(temp_file_path):
     path = temp_file_path
     extracted_text = (analyse(get_result_from_file(path)))
     return extracted_text
+
+
+def read_and_write_file(filename, extracted_text, media_dir):
+    # Ensure media_dir exists
+    if not os.path.exists(media_dir):
+        os.makedirs(media_dir)
+    
+    text_filename = f"{os.path.splitext(filename)[0]}.txt"
+    text_file_path = os.path.join(media_dir, text_filename)
+    
+    # Check if the path already exists as a file
+    if os.path.isfile(text_file_path):
+        raise Exception(f"Path conflict: {text_file_path} exists as a file.")
+    
+    try:
+        with open(text_file_path, 'w', encoding='utf-8') as outfile:
+            # Ensure every line ends with a newline character
+            lines = [line if line is not None else '' for line in extracted_text]
+            outfile.writelines(line + '\n' for line in lines)
+    except Exception as e:
+        print(f"An error occurred while writing to the file: {e}")
+        
+    return text_filename
